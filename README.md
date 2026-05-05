@@ -1,24 +1,19 @@
 # vfio-stealth-nix
 
-[![CI](https://github.com/Daaboulex/vfio-stealth-nix/actions/workflows/ci.yml/badge.svg)](https://github.com/Daaboulex/vfio-stealth-nix/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/Daaboulex/vfio-stealth-nix)](./LICENSE)
-[![NixOS](https://img.shields.io/badge/NixOS-unstable-78C0E8?logo=nixos&logoColor=white)](https://nixos.org)
-[![Last commit](https://img.shields.io/github/last-commit/Daaboulex/vfio-stealth-nix)](https://github.com/Daaboulex/vfio-stealth-nix/commits)
-[![Stars](https://img.shields.io/github/stars/Daaboulex/vfio-stealth-nix?style=flat)](https://github.com/Daaboulex/vfio-stealth-nix/stargazers)
-[![Issues](https://img.shields.io/github/issues/Daaboulex/vfio-stealth-nix)](https://github.com/Daaboulex/vfio-stealth-nix/issues)
+<!-- BEGIN generated:badges -->
+[![NixOS unstable](https://img.shields.io/badge/NixOS-unstable-78C0E8?logo=nixos&logoColor=white)](https://nixos.org)
+[![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-blue.svg)](./LICENSE)
+<!-- END generated:badges -->
 
+<!-- BEGIN generated:upstream -->
 ## Upstream
 
-This is a **multi-upstream Nix integration** combining several anti-detection projects into one declarative NixOS module. All credit for the core techniques goes to:
-
-- **AutoVirt** — QEMU AMD patches + EDK2/OVMF anti-detection patches: [Scrut1ny/AutoVirt](https://github.com/Scrut1ny/AutoVirt)
-- **BetterTiming** — TSC compensation kernel patch technique: [SamuelTulach/BetterTiming](https://github.com/SamuelTulach/BetterTiming)
-- **Hypervisor-Phantom** — CPUID leaf 0 spoofing technique
-- **Original glue + module + ACPI SSDT compilation**: this repo
-
-The update workflow runs on a daily cron schedule. On success, it commits and pushes the flake input update automatically. On failure, it creates a GitHub issue with the build log and pushes the attempted update to a branch for manual recovery.
-
-Licensed under [MIT](./LICENSE) for the Nix-side glue + ACPI SSDT files. Each upstream patch retains its own license — see the linked repos.
+| | |
+|---|---|
+| **Project** | Custom |
+| **License** | N/A |
+| **Tracked** | Custom update script |
+<!-- END generated:upstream -->
 
 ## Overview
 
@@ -431,3 +426,9 @@ These detection methods **cannot be bypassed** by software-level spoofing:
 ## License
 
 GPL-2.0 (kernel patches mandate GPL)
+
+<!-- BEGIN generated:footer -->
+---
+
+*Maintained as part of the [Daaboulex](https://github.com/Daaboulex) NixOS ecosystem.*
+<!-- END generated:footer -->
