@@ -3,11 +3,11 @@
     "autovirt": {
       "flake": false,
       "locked": {
-        "lastModified": 1778237778,
-        "narHash": "sha256-7FRERBYzlPeVw6RGlCg9P2OXO3b1qib+M+CsD6w7X0c=",
+        "lastModified": 1778497127,
+        "narHash": "sha256-6+Ik1RG3t6uOt7/EJ0/fJb1BmPWXbxXAq6kGJQIKYA8=",
         "owner": "Scrut1ny",
         "repo": "AutoVirt",
-        "rev": "34c97721585197d4ea6b98a13c5be6332e6d6c00",
+        "rev": "3a934c30c1e90ed3978531a25c19f6916277753b",
         "type": "github"
       },
       "original": {
