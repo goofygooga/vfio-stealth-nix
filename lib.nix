@@ -208,17 +208,19 @@
           "type=29,description=Current Probe,type=5,status=3,max=30000,min=100"
         ]
         # SMBIOS type 7 (cache memory) — prevents empty Win32_CacheMemory
+        # Cache types: 3=Instruction, 4=Data, 5=Unified (matching real AMD Zen hardware)
+        # type=1 ("Other") is MORE suspicious than no cache entries
         ++ [
           "-smbios"
-          "type=7,designation=L1 Cache,type=1,level=1,installed-size=${toString cache.l1},maximum-size=${toString cache.l1}"
+          "type=7,designation=L1 Data Cache,type=4,level=1,installed-size=${toString cache.l1},maximum-size=${toString cache.l1}"
         ]
         ++ [
           "-smbios"
-          "type=7,designation=L2 Cache,type=1,level=2,installed-size=${toString cache.l2},maximum-size=${toString cache.l2}"
+          "type=7,designation=L2 Unified Cache,type=5,level=2,installed-size=${toString cache.l2},maximum-size=${toString cache.l2}"
         ]
         ++ [
           "-smbios"
-          "type=7,designation=L3 Cache,type=1,level=3,installed-size=${toString cache.l3},maximum-size=${toString cache.l3}"
+          "type=7,designation=L3 Unified Cache,type=5,level=3,installed-size=${toString cache.l3},maximum-size=${toString cache.l3}"
         ]
         # SMBIOS type 8 (port connector) — prevents empty Win32_PortConnector
         ++ [

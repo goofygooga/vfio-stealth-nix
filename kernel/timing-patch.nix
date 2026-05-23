@@ -127,7 +127,7 @@
   \
   \tvcpu->arch.regs[VCPU_REGS_RAX] = data & -1u;\
   \tvcpu->arch.regs[VCPU_REGS_RDX] = (data >> 32) & -1u;\
-  \t{ u64 __tsc_aux; rdmsrl(MSR_TSC_AUX, __tsc_aux); vcpu->arch.regs[VCPU_REGS_RCX] = (u32)__tsc_aux; }\
+  \tvcpu->arch.regs[VCPU_REGS_RCX] = (u32)to_svm(vcpu)->tsc_aux;\
   \
   \tvcpu->run->exit_reason = 0xDEAD;\
   \treturn kvm_skip_emulated_instruction(vcpu);\

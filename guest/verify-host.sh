@@ -12,8 +12,8 @@ FAIL=0
 WARN=0
 
 pass() { printf "\033[32m[PASS]\033[0m %s\n" "$1"; }
-fail() { printf "\033[31m[FAIL]\033[0m %s\n" "$1"; ((FAIL++)); }
-warn() { printf "\033[33m[WARN]\033[0m %s\n" "$1"; ((WARN++)); }
+fail() { printf "\033[31m[FAIL]\033[0m %s\n" "$1"; FAIL=$((FAIL + 1)); }
+warn() { printf "\033[33m[WARN]\033[0m %s\n" "$1"; WARN=$((WARN + 1)); }
 skip() { printf "\033[33m[SKIP]\033[0m %s\n" "$1"; }
 
 echo "=== vfio-stealth host verification (domain: $DOMAIN) ==="
@@ -128,8 +128,8 @@ fi
 # -----------------------------------------------------------------------
 if [[ -n "${XML:-}" ]]; then
     # Check for VirtIO devices that should have been stripped
-    BALLOON=$(echo "$XML" | grep -c "memballoon model='virtio'" 2>/dev/null || echo "0")
-    RNG=$(echo "$XML" | grep -c "<rng model='virtio'" 2>/dev/null || echo "0")
+    BALLOON=$(echo "$XML" | grep -c "memballoon model='virtio'" || true)
+    RNG=$(echo "$XML" | grep -c "<rng model='virtio'" || true)
 
     if [[ "$BALLOON" -gt 0 ]]; then
         fail "VirtIO balloon device present (should be stripped)"
@@ -142,7 +142,7 @@ if [[ -n "${XML:-}" ]]; then
     fi
 
     # Check QEMU command line for Red Hat PCI vendor IDs
-    QEMU_CMD=$(echo "$XML" | grep -c "1af4\|1b36\|1234" 2>/dev/null || echo "0")
+    QEMU_CMD=$(echo "$XML" | grep -c "1af4\|1b36\|1234" || true)
     if [[ "$QEMU_CMD" -gt 0 ]]; then
         warn "Red Hat/QEMU PCI vendor IDs referenced in domain XML"
     else
@@ -197,3 +197,5 @@ elif [[ $FAIL -eq 0 ]]; then
 else
     printf "\033[31m=== %d failures, %d warnings ===\033[0m\n" "$FAIL" "$WARN"
 fi
+
+exit "$FAIL"

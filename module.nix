@@ -425,9 +425,11 @@ in
     readOnly = true;
     internal = true;
     default =
-      lib.optionalString cfg.timing.enable timingPatchScript
-      + lib.optionalString (cfg.cpuidSpoof.enable && !cfg.cpuidPassthrough.enable) cpuidPatchScript
-      + lib.optionalString cfg.cpuidPassthrough.enable cpuidDisableScript;
+      lib.optionalString (cfg.enable && cfg.timing.enable) timingPatchScript
+      + lib.optionalString (
+        cfg.enable && cfg.cpuidSpoof.enable && !cfg.cpuidPassthrough.enable
+      ) cpuidPatchScript
+      + lib.optionalString (cfg.enable && cfg.cpuidPassthrough.enable) cpuidDisableScript;
     description = "Combined kernel postPatch script. Apply via kernel overrideAttrs in host config.";
   };
 }
