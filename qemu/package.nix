@@ -76,7 +76,9 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemu.version)
       # Disk model: patch uses "Hitachi HMS360404D5CF00" — replace with ${diskModel}
       sed -i 's|Hitachi HMS360404D5CF00|${diskModel}|g' hw/ide/core.c hw/scsi/scsi-disk.c 2>/dev/null || true
       # Disk serial: AutoVirt blanks the IDE serial (drive_serial_str = '\0') — set realistic WD serial
-      sed -i "s|drive_serial_str\[0\] = '\\\\0';.*|pstrcpy(s->drive_serial_str, sizeof(s->drive_serial_str), \"${diskSerial}\");|g" hw/ide/core.c 2>/dev/null || true
+      sed -i "s|s->drive_serial_str\[0\] = '\\\\0';|pstrcpy(s->drive_serial_str, sizeof(s->drive_serial_str), \"${diskSerial}\");|g" hw/ide/core.c 2>/dev/null || true
+      # SCSI serial: QEMU default is "QEMU HARDDISK" — replace with diskSerial
+      sed -i "s|QEMU HARDDISK|${diskSerial}|g" hw/scsi/scsi-disk.c 2>/dev/null || true
       # SCSI product: AutoVirt uses "Samsung SSD 980 500GB" — replace with ${diskModel}
       sed -i 's|Samsung SSD 980 500GB|${diskModel}|g' hw/scsi/scsi-disk.c 2>/dev/null || true
 
