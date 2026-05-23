@@ -16,7 +16,7 @@
   acpiOemTableId ? "A M I   ",
   # Disk: Generic WD
   diskModel ? "WDC WD10EZEX-00WN4A0     ",
-  diskSerial ? "WD-WMC4N0E0XYZA",
+  diskSerial ? "Default string",
   # Optical: Generic LG
   opticalModel ? "HL-DT-ST DVDRAM GH24NSC0 ",
 }:

@@ -87,8 +87,8 @@ in
       };
       biosDate = lib.mkOption {
         type = lib.types.str;
-        default = "02/14/2025";
-        description = "BIOS release date (MM/DD/YYYY format). Defeats Win32_BIOS.ReleaseDate checks. OVMF defaults to 02/02/2022 which is a generic VM date.";
+        default = "01/01/2025";
+        description = "BIOS release date (MM/DD/YYYY format). Defeats Win32_BIOS.ReleaseDate checks. OVMF defaults to 02/02/2022 which is a generic VM date. Set to your board's actual BIOS date.";
       };
       biosRelease = lib.mkOption {
         type = lib.types.str;
@@ -107,8 +107,8 @@ in
       };
       baseBoardSerial = lib.mkOption {
         type = lib.types.str;
-        default = "220631884300123";
-        description = "Baseboard serial number (SMBIOS Type 2). ASUS format: 15 alphanumeric chars.";
+        default = "Default string";
+        description = "Baseboard serial number (SMBIOS Type 2). Set to your real board serial from dmidecode.";
       };
       baseBoardAsset = lib.mkOption {
         type = lib.types.str;
@@ -131,13 +131,13 @@ in
       memory = {
         manufacturer = lib.mkOption {
           type = lib.types.str;
-          default = "Kingston";
-          description = "DIMM manufacturer for SMBIOS type 17. Defeats WMI Win32_PhysicalMemory.Manufacturer checks.";
+          default = "Unknown";
+          description = "DIMM manufacturer for SMBIOS type 17. Defeats WMI Win32_PhysicalMemory.Manufacturer checks. Set to your real RAM vendor.";
         };
         partNumber = lib.mkOption {
           type = lib.types.str;
-          default = "KF560C36-16";
-          description = "DIMM part number. Defeats WMI Win32_PhysicalMemory.PartNumber checks.";
+          default = "Unknown";
+          description = "DIMM part number. Defeats WMI Win32_PhysicalMemory.PartNumber checks. Set to your real DIMM part number.";
         };
         speed = lib.mkOption {
           type = lib.types.int;
@@ -217,19 +217,8 @@ in
             };
           }
         );
-        default = [
-          {
-            designation = "Intel I225-V 2.5G LAN";
-            kind = "ethernet";
-            instance = 1;
-          }
-          {
-            designation = "PROM21 SATA Controller";
-            kind = "sata";
-            instance = 1;
-          }
-        ];
-        description = "Onboard devices for SMBIOS Type 41. Prevents empty Win32_OnBoardDevice.";
+        default = [ ];
+        description = "Onboard devices for SMBIOS Type 41. Set to match your board (e.g., LAN, SATA controllers from dmidecode -t 41). Empty = no Type 41 entries.";
       };
     };
 

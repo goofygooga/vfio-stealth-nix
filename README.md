@@ -158,16 +158,16 @@ All options live under `myModules.vfio.stealth`.
 | `smbios.product` | `str` | `"To Be Filled By O.E.M."` | System and baseboard product name (Types 1, 2) | Win32_ComputerSystem.Model |
 | `smbios.biosVendor` | `str` | `"American Megatrends Inc."` | BIOS vendor string (Type 0) | Win32_BIOS.Manufacturer |
 | `smbios.biosVersion` | `str` | `"1001"` | BIOS version string (Type 0) | Win32_BIOS.SMBIOSBIOSVersion |
-| `smbios.biosDate` | `str` | `"02/14/2025"` | BIOS release date MM/DD/YYYY (Type 0). OVMF default 02/02/2022 is a generic VM date | Win32_BIOS.ReleaseDate |
+| `smbios.biosDate` | `str` | `"01/01/2025"` | BIOS release date MM/DD/YYYY (Type 0). OVMF default 02/02/2022 is a generic VM date | Win32_BIOS.ReleaseDate |
 | `smbios.biosRelease` | `str` | `"2.4"` | BIOS release version major.minor (Type 0 System BIOS Release field) | Win32_BIOS release fields |
 | `smbios.serial` | `str` | `"System Serial Number"` | System serial number (Type 1) | Win32_ComputerSystem.SerialNumber |
 | `smbios.baseBoardVersion` | `str` | `"Rev 1.xx"` | Baseboard version string (Type 2) | Win32_BaseBoard.Version |
-| `smbios.baseBoardSerial` | `str` | `"220631884300123"` | Baseboard serial number (Type 2, ASUS 15-char format) | Win32_BaseBoard.SerialNumber |
+| `smbios.baseBoardSerial` | `str` | `"Default string"` | Baseboard serial number (Type 2, set from dmidecode) | Win32_BaseBoard.SerialNumber |
 | `smbios.baseBoardAsset` | `str` | `"Default string"` | Baseboard asset tag (Type 2) | Win32_BaseBoard.Tag |
 | `smbios.baseBoardLocation` | `str` | `"Default string"` | Baseboard location in chassis (Type 2) | Win32_BaseBoard.LocationInChassis |
 | `smbios.socketPrefix` | `str` | `"AM5"` | Processor socket designator prefix (Type 4) | Win32_Processor.SocketDesignation |
-| `smbios.memory.manufacturer` | `str` | `"Kingston"` | DIMM manufacturer (Type 17) | Win32_PhysicalMemory.Manufacturer |
-| `smbios.memory.partNumber` | `str` | `"KF560C36-16"` | DIMM part number (Type 17) | Win32_PhysicalMemory.PartNumber |
+| `smbios.memory.manufacturer` | `str` | `"Unknown"` | DIMM manufacturer (Type 17) | Win32_PhysicalMemory.Manufacturer |
+| `smbios.memory.partNumber` | `str` | `"Unknown"` | DIMM part number (Type 17) | Win32_PhysicalMemory.PartNumber |
 | `smbios.memory.speed` | `int` | `4800` | Memory speed in MT/s (Type 17) | Win32_PhysicalMemory.Speed |
 | `smbios.memory.size` | `int` | `16384` | DIMM size in MB per module (Type 17) | Win32_PhysicalMemory.Capacity |
 | `smbios.memory.count` | `int` | `2` | Number of DIMMs to report (Type 17) | Win32_PhysicalMemory count |
@@ -196,7 +196,7 @@ Build-time arguments to `qemu-stealth`:
 | Argument | Default | Description | Detection Vector |
 |---|---|---|---|
 | `diskModel` | `"WDC WD10EZEX-00WN4A0     "` | IDE/SCSI disk model string (25 chars, space-padded) | Disk model reveals QEMU default |
-| `diskSerial` | `"WD-WMC4N0E0XYZA"` | IDE disk serial string (replaces AutoVirt blank serial) | Blank disk serial is a VM indicator |
+| `diskSerial` | `"Default string"` | IDE disk serial string (replaces AutoVirt blank serial) | Blank disk serial is a VM indicator |
 | `opticalModel` | `"HL-DT-ST DVDRAM GH24NSC0 "` | IDE/ATAPI optical drive model string (25 chars) | Optical drive model reveals QEMU |
 
 ### ACPI
