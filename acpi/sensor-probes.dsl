@@ -14,12 +14,12 @@ DefinitionBlock ("sensor-probes.aml", "SSDT", 2, "_ASUS_", "Sensors ", 0x0000100
         // Secondary thermal zone for CPU package
         ThermalZone (CPUZ)
         {
-            // CPU temperature: 52-58°C fluctuation using Timer() low bits
-            // 52°C = 325.15K = 3252, 58°C = 331.15K = 3312
+            // CPU temperature: 52-58°C fluctuation using Timer() high bits
+            // >>27 gives ~13s granularity (Timer ticks at 10MHz), matching real sensor update rate
             Method (_TMP, 0, Serialized)
             {
                 Local0 = Timer
-                Local1 = (Local0 >> 4) & 0x3F
+                Local1 = (Local0 >> 27) & 0x3F
                 Local1 = Local1 % 61
                 Local2 = 3252 + Local1
                 Return (Local2)
@@ -55,12 +55,12 @@ DefinitionBlock ("sensor-probes.aml", "SSDT", 2, "_ASUS_", "Sensors ", 0x0000100
         // VRM/chipset thermal zone
         ThermalZone (VRMT)
         {
-            // VRM temperature: 42-48°C fluctuation using Timer() low bits
-            // 42°C = 315.15K = 3152, 48°C = 321.15K = 3212
+            // VRM temperature: 42-48°C fluctuation using Timer() high bits
+            // >>28 gives ~27s granularity, decorrelated from CPUZ
             Method (_TMP, 0, Serialized)
             {
                 Local0 = Timer
-                Local1 = (Local0 >> 6) & 0x3F
+                Local1 = (Local0 >> 28) & 0x3F
                 Local1 = Local1 % 61
                 Local2 = 3152 + Local1
                 Return (Local2)

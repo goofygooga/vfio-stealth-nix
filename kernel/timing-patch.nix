@@ -91,7 +91,8 @@
         mv arch/x86/kvm/x86.c.tmp arch/x86/kvm/x86.c
       echo "[OK] x86.c: patched MSR_IA32_TSC to return compensated time"
     else
-      echo "[WARN] x86.c: could not find MSR_IA32_TSC case block — skipping"
+      echo "[FAIL] x86.c: could not find MSR_IA32_TSC case block — TSC compensation broken without this"
+      exit 1
     fi
 
     # ---------- 5. Enable RDTSC and RDTSCP interception in init_vmcb ----------
@@ -121,7 +122,7 @@
   \
   \tvcpu->arch.regs[VCPU_REGS_RAX] = data & -1u;\
   \tvcpu->arch.regs[VCPU_REGS_RDX] = (data >> 32) & -1u;\
-  \tvcpu->arch.regs[VCPU_REGS_RCX] = (u32)vcpu->arch.tsc_aux;\
+  \t{ u64 __tsc_aux; rdmsrl(MSR_TSC_AUX, __tsc_aux); vcpu->arch.regs[VCPU_REGS_RCX] = (u32)__tsc_aux; }\
   \
   \tvcpu->run->exit_reason = 123;\
   \n\treturn kvm_skip_emulated_instruction(vcpu);\

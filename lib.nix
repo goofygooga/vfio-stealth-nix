@@ -273,7 +273,7 @@
         # of returning valid pvclock/steal-time data that reveals KVM).
         ++ [
           "-cpu"
-          "host,kvm-pv-enforce-cpuid=on"
+          "kvm-pv-enforce-cpuid=on"
         ]
         # APERF/MPERF passthrough (defeats IET-based VM detection, kernel 6.18+)
         # Use standalone -cpu property form to append to libvirt's existing -cpu host
