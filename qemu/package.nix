@@ -186,15 +186,16 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemu.version)
             sed -i '/adjust_feat_level(cpu, FEAT_6_EAX)/a\    x86_cpu_adjust_feat_level(cpu, FEAT_6_ECX);' target/i386/cpu.c
 
             # --- 7. kvm.c: Add APERF/MPERF CPUID reporting in kvm_arch_get_supported_cpuid ---
-            grep -q 'function == 6 && reg == R_EAX' target/i386/kvm/kvm.c || {
-              echo "FAIL: cannot find function == 6 && reg == R_EAX in target/i386/kvm/kvm.c"; exit 1; }
-            # Insert an else-if block for function==6 && reg==R_ECX after the EAX block.
-            # The EAX block ends with a line setting CPUID_6_EAX_ARAT. Find the closing '}'
-            # of that if-block and append the new else-if.
+            grep -q 'ret |= CPUID_6_EAX_ARAT' target/i386/kvm/kvm.c || {
+              echo "FAIL: cannot find the function==6/R_EAX block (CPUID_6_EAX_ARAT) in target/i386/kvm/kvm.c"; exit 1; }
+            # kvm_arch_get_supported_cpuid is an if/else-if LADDER; append a new
+            # `} else if (function==6 && reg==R_ECX)` branch AFTER the EAX body line, with NO
+            # trailing `}` (the existing next `} else if` closes it + continues the ladder).
+            # Keying off the EAX *condition* line + a loose `^\s*\}` was the bug: that line
+            # itself starts with `}`, so it got matched and replaced, corrupting the ladder.
             awk '
-              /function == 6 && reg == R_EAX/ { in_6eax=1 }
-              in_6eax && /^\s*\}/ {
-                in_6eax=0
+              { print }
+              !done && /ret \|= CPUID_6_EAX_ARAT/ {
                 print "        } else if (function == 6 && reg == R_ECX) {"
                 print "            if (enable_cpu_pm) {"
                 print "                int disable_exits = kvm_check_extension(s,"
@@ -203,10 +204,8 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemu.version)
                 print "                    ret |= CPUID_6_ECX_APERFMPERF;"
                 print "                }"
                 print "            }"
-                print "        }"
-                next
+                done = 1
               }
-              { print }
             ' target/i386/kvm/kvm.c > target/i386/kvm/kvm.c.tmp
             mv target/i386/kvm/kvm.c.tmp target/i386/kvm/kvm.c
 
