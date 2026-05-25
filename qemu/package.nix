@@ -213,7 +213,7 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemu.version)
             # --- 8. kvm.c: Add APERFMPERF to disable_exits mask ---
             grep -q 'KVM_X86_DISABLE_EXITS_CSTATE)' target/i386/kvm/kvm.c || {
               echo "FAIL: cannot find KVM_X86_DISABLE_EXITS_CSTATE) in target/i386/kvm/kvm.c"; exit 1; }
-            sed -i 's|KVM_X86_DISABLE_EXITS_CSTATE)|KVM_X86_DISABLE_EXITS_CSTATE | KVM_X86_DISABLE_EXITS_APERFMPERF)|g' target/i386/kvm/kvm.c
+            sed -i 's#KVM_X86_DISABLE_EXITS_CSTATE)#KVM_X86_DISABLE_EXITS_CSTATE | KVM_X86_DISABLE_EXITS_APERFMPERF)#g' target/i386/kvm/kvm.c
 
             # --- Verification ---
             echo "Verifying APERF/MPERF backport edits..."
