@@ -95,15 +95,25 @@ fi
 
 log "Step 3/3: ELF verification"
 nix build .#default
-FOUND=$(find result/bin/ \( -type f -o -type l \) -executable 2>/dev/null | head -1)
-if [ -z "$FOUND" ]; then
-  err "No executable found in build output"
+# Verify the binary that actually matters — the stealth emulator. qemu is a
+# multi-output derivation (out/ga/doc/debug); the previous `find … | head -1`
+# grabbed an arbitrary first executable, which on that layout is qemu-ga (in
+# the separate `ga` output, not a plain ELF), so every real upstream bump
+# tripped "Not an ELF binary: result/bin/qemu-ga" (issue #5). Checking
+# qemu-system-x86_64 directly is robust to the output layout AND meaningful:
+# it proves the emulator built, not merely that *some* file is an ELF.
+QEMU_BIN="result/bin/qemu-system-x86_64"
+if [ ! -e "$QEMU_BIN" ]; then
+  err "qemu-system-x86_64 missing from build output"
   output "error_type" "verification-error"
   exit 1
 fi
-if [ -n "$FOUND" ]; then
-  file "$FOUND" | grep -q ELF || { err "Not an ELF binary: $FOUND"; output "error_type" "verification-error"; exit 1; }
+if ! file -L "$QEMU_BIN" | grep -q ELF; then
+  err "qemu-system-x86_64 is not an ELF binary: $(file -L "$QEMU_BIN" 2>&1)"
+  output "error_type" "verification-error"
+  exit 1
 fi
+log "Verified ELF: qemu-system-x86_64"
 rm -f result
 
 log "Update verified: $CURRENT_VERSION → $NEW_VERSION"
