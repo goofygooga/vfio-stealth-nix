@@ -3,11 +3,11 @@
     "autovirt": {
       "flake": false,
       "locked": {
-        "lastModified": 1779685699,
-        "narHash": "sha256-ROFoeG3vbqSv28x1NgsBzwCUuDqmk5QipbbniqQNhXU=",
+        "lastModified": 1780205311,
+        "narHash": "sha256-s4HO8zl1vrExM6GLCc1vW6tLRzkLOF94dGCDx/dwulo=",
         "owner": "Scrut1ny",
         "repo": "AutoVirt",
-        "rev": "60c984ee09137b07bd165831b4d88cc197f83a57",
+        "rev": "6c98fb67e62bbd1a3657617bc9f52eda8dd90baa",
         "type": "github"
       },
       "original": {
@@ -129,11 +129,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1778869304,
-        "narHash": "sha256-30sZNZoA1cqF5JNO9fVX+wgiQYjB7HJqqJ4ztCDeBZE=",
+        "lastModified": 1779560665,
+        "narHash": "sha256-tpyBcxPpcQb8ukyNF7DoCwfSY3VPsxHoYwj00Cayv5o=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "d233902339c02a9c334e7e593de68855ad26c4cb",
+        "rev": "64c08a7ca051951c8eae34e3e3cb1e202fe36786",
         "type": "github"
       },
       "original": {
