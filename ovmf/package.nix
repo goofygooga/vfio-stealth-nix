@@ -42,9 +42,15 @@ in
 # Override OVMF to use our patched edk2 source tree.
 # OVMF accepts `edk2` as an input — swapping it propagates all patches
 # into the final firmware binary (OVMF_CODE.fd / OVMF_VARS.fd).
-(OVMF.override { edk2 = edk2-patched; }).overrideAttrs (old: {
-  pname = "OVMF-stealth";
-  meta = (old.meta or { }) // {
-    description = "OVMF firmware with AutoVirt anti-detection patches";
-  };
-})
+(OVMF.override {
+  edk2 = edk2-patched;
+  secureBoot = true;
+  msVarsTemplate = true;
+  tpmSupport = true;
+}).overrideAttrs
+  (old: {
+    pname = "OVMF-stealth";
+    meta = (old.meta or { }) // {
+      description = "OVMF firmware with AutoVirt anti-detection patches";
+    };
+  })
