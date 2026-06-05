@@ -17,24 +17,34 @@
       aperfMperf ? true,
       stripVirtio ? true,
       hypervVendorId ? "AuthAMDRyzen", # 12 chars — libvirt max
+      hypervMode ? "enlightened", # "enlightened" = visible hypervisor + Hyper-V enlightenments; "hidden" = concealed hypervisor, no enlightenments
     }:
     {
-      cpuFeatures = [
-        {
+      cpuFeatures =
+        lib.optional (hypervMode == "hidden") {
           policy = "disable";
           name = "hypervisor";
         }
-        {
-          policy = "optional";
-          name = "topoext";
-        }
-        {
-          policy = "optional";
-          name = "invtsc";
-        }
-      ];
+        ++ [
+          {
+            policy = "optional";
+            name = "topoext";
+          }
+          {
+            policy = "optional";
+            name = "invtsc";
+          }
+        ];
 
       features = {
+        kvm = {
+          hidden.state = true;
+          hint-dedicated.state = true;
+          poll-control.state = true;
+        };
+        vmport.state = false;
+      }
+      // lib.optionalAttrs (hypervMode == "enlightened") {
         hyperv = {
           mode = "custom";
           relaxed.state = true;
@@ -43,7 +53,13 @@
             state = true;
             retries = 8191;
           };
+          vpindex.state = true;
           runtime.state = true;
+          synic.state = true;
+          stimer = {
+            state = true;
+            direct.state = true;
+          };
           reset.state = true;
           vendor_id = {
             state = true;
@@ -54,12 +70,6 @@
           tlbflush.state = true;
           ipi.state = true;
         };
-        kvm = {
-          hidden.state = true;
-          hint-dedicated.state = true;
-          poll-control.state = true;
-        };
-        vmport.state = false;
       };
 
       clock = {

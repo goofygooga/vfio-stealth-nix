@@ -263,6 +263,15 @@ in
       description = "Hyper-V vendor_id reported to guest (1–12 chars, libvirt hard limit). Avoid well-known VM values like 'AMDisbetter!' or 'Microsoft Hv'.";
     };
 
+    hypervMode = lib.mkOption {
+      type = lib.types.enum [
+        "enlightened"
+        "hidden"
+      ];
+      default = "enlightened";
+      description = "Hyper-V enlightenment strategy for stealth VMs. \"enlightened\" exposes the hypervisor + full Hyper-V enlightenments (paravirt perf; blends in with VBS-enabled Windows 11). \"hidden\" conceals the hypervisor and emits no enlightenments. Per-VM overridable via vms.<name>.hypervMode";
+    };
+
     # --- VirtIO device stripping ---
     # VirtIO PCI vendor/device IDs (1af4:10xx) are trivially fingerprinted.
 
