@@ -3,6 +3,9 @@
   OVMF,
   edk2,
   fetchurl,
+  secureBoot ? true,
+  msVarsTemplate ? secureBoot,
+  tpmSupport ? true,
 }:
 let
   # AutoVirt EDK2 patch removes VM indicators from OVMF firmware:
@@ -37,8 +40,10 @@ let
           'INF MdeModulePkg/Logo/LogoDxe.inf' \
           '# stripped: LogoDxe' || true
 
-      # fw_cfg identity customization: match the QEMU-side signature change
+      # fw_cfg probe signature (4 bytes): match the QEMU-side change
       # ("QEMU" -> "AMDK") so OVMF's QemuFwCfgLib recognizes the device.
+      # OVMF detects DMA availability via the FW_CFG_F_DMA version bit, not
+      # the 8-byte DMA signature, so only the 4-byte probe needs patching.
       for f in OvmfPkg/Library/QemuFwCfgLib/*.c; do
         if [ -f "$f" ]; then
           sed -i "s/SIGNATURE_32 *( *'Q' *, *'E' *, *'M' *, *'U' *)/SIGNATURE_32 ('A', 'M', 'D', 'K')/g" "$f"
@@ -52,9 +57,7 @@ in
 # into the final firmware binary (OVMF_CODE.fd / OVMF_VARS.fd).
 (OVMF.override {
   edk2 = edk2-patched;
-  secureBoot = true;
-  msVarsTemplate = true;
-  tpmSupport = true;
+  inherit secureBoot msVarsTemplate tpmSupport;
 }).overrideAttrs
   (old: {
     pname = "OVMF-stealth";

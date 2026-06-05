@@ -67,18 +67,18 @@
               { lib, ... }:
               {
                 virtualisation.qemu.package = lib.mkForce self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-                virtualisation.useBootLoader = true;
                 virtualisation.useEFIBoot = true;
-                virtualisation.efi.OVMF = lib.mkForce self.packages.${pkgs.stdenv.hostPlatform.system}.ovmf-stealth;
-                virtualisation.memorySize = 1024;
-                virtualisation.cores = 1;
-                documentation.enable = false;
-                security.polkit.enable = false;
-                services.udisks2.enable = false;
-                nix.enable = false;
+                # Disable Secure Boot for CI: the NixOS test kernel is unsigned,
+                # so OVMF with msVarsTemplate (MS keys enrolled + SB enforced)
+                # rejects it. The stealth patches are still fully present.
+                virtualisation.efi.OVMF =
+                  lib.mkForce
+                    (self.packages.${pkgs.stdenv.hostPlatform.system}.ovmf-stealth.override {
+                      secureBoot = false;
+                    }).fd;
               };
             testScript = ''
-              machine.wait_for_unit("multi-user.target", timeout=480)
+              machine.wait_for_unit("multi-user.target", timeout=300)
             '';
           };
         };

@@ -315,16 +315,6 @@ in
         default = "ACI";
         description = "3-char EDID manufacturer code.";
       };
-      modelAbbrev = lib.mkOption {
-        type = lib.types.str;
-        default = "ACI     ";
-        description = "8-char padded EDID model abbreviation.";
-      };
-      model = lib.mkOption {
-        type = lib.types.str;
-        default = "ASUS VG248      ";
-        description = "16-char padded EDID model string.";
-      };
       serial = lib.mkOption {
         type = lib.types.str;
         default = "VG248QE";

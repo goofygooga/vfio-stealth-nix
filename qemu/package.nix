@@ -6,8 +6,6 @@
   autovirt,
   # EDID: Generic ASUS monitor
   edidManufacturer ? "ACI",
-  edidModelAbbrev ? "ACI     ",
-  edidModel ? "ASUS VG248      ",
   edidSerial ? "VG248QE",
   edidProductCode ? "0x2480",
   edidDpi ? 91,
@@ -23,6 +21,8 @@
   opticalModel ? "HL-DT-ST DVDRAM GH24NSC0 ",
   # SCSI vendor (8-char T10 format)
   scsiVendor ? "WDC",
+  # SCSI target product for dead-LUN INQUIRY fallback (16-char padded)
+  scsiTargetProduct ? "SCSI Disk       ",
   # EDID default resolution
   edidResX ? 1920,
   edidResY ? 1080,
@@ -100,11 +100,11 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemuBase.version)
       sed -i 's|info->prefx = 1280;|info->prefx = ${toString edidResX};|g' hw/display/edid-generate.c
       sed -i 's|info->prefy = 800;|info->prefy = ${toString edidResY};|g' hw/display/edid-generate.c
 
-      # SCSI INQUIRY: replace stock QEMU vendor/product in scsi-bus.c
+      # SCSI INQUIRY: replace stock QEMU vendor/product for dead-LUN fallback in scsi-bus.c
       substituteInPlace hw/scsi/scsi-bus.c \
-        --replace-fail '"QEMU    "' '"${edidModelAbbrev}"'
+        --replace-fail '"QEMU    "' '"${builtins.substring 0 8 (scsiVendor + "        ")}"'
       substituteInPlace hw/scsi/scsi-bus.c \
-        --replace-fail '"QEMU TARGET     "' '"${edidModel}"'
+        --replace-fail '"QEMU TARGET     "' '"${scsiTargetProduct}"'
 
       # SCSI disk: replace stock QEMU product/vendor in scsi-disk.c
       substituteInPlace hw/scsi/scsi-disk.c \

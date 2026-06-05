@@ -186,14 +186,10 @@
           # pairs; a literal comma in a value must be doubled (,,) to escape it.
           escapeSmbios = lib.replaceStrings [ "," ] [ ",," ];
         in
-        # SMBIOS type 2 (baseboard) — NixVirt sysinfo doesn't emit type 2,
-        # so inject via QEMU CLI args to populate Win32_BaseBoard.
-        [
-          "-smbios"
-          "type=2,manufacturer=${escapeSmbios smbios.manufacturer},product=${escapeSmbios smbios.product},version=${escapeSmbios smbios.baseBoardVersion},serial=${escapeSmbios smbios.baseBoardSerial},asset=${escapeSmbios smbios.baseBoardAsset},location=${escapeSmbios smbios.baseBoardLocation}"
-        ]
+        # SMBIOS type 2 (baseboard) is handled by sysinfo.baseBoard above —
+        # libvirt translates it to -smbios type=2 automatically (since v1.2.17).
         # SMBIOS type 3 (chassis)
-        ++ [
+        [
           "-smbios"
           "type=3,manufacturer=${escapeSmbios smbios.manufacturer},version=1.0,serial=Default string,asset=Default string,sku=Default string"
         ]
