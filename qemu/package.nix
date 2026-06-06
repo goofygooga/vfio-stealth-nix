@@ -129,14 +129,28 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemuBase.version)
       substituteInPlace hw/ide/core.c \
         --replace-fail 'HL-DT-ST BD-RE WH16NS60' '${opticalModel}'
 
-      # fw_cfg 4-byte probe signature: intentionally LEFT as "QEMU".
-      # OVMF-stealth looks for "AMDK" — the deliberate mismatch disables
-      # fw_cfg detection. Without fw_cfg, OVMF skips the Q35-specific PEI
-      # init path (hits a debug trap due to AutoVirt PCI ID changes) and falls
-      # back to generic platform init. Guest OS never accesses fw_cfg
-      # (AutoVirt removes the ACPI DSDT node), so no detection penalty.
-      # UEFI boot from disk works without fw_cfg; only -kernel direct boot
-      # would need it (not used for Windows VMs).
+      # Revert Q35 MCH host bridge (00:00.0) to real Intel Q35 identity.
+      # AutoVirt spoofs it to AMD (1022:14d8), but OVMF's Q35 PEI init
+      # (Q35TsegMbytesInitialization, Q35SmramAtDefaultSmbaseInitialization)
+      # requires a genuine Q35 MCH — the TSEG/SMRAM registers live at
+      # DRAMC_REGISTER_Q35 offsets that only work when OVMF recognizes
+      # the real Q35 device ID. The MCH is firmware-internal (Q35 machine
+      # regardless), so real Q35 identity costs nothing in stealth — an
+      # AMD MCH on a Q35 machine is itself a detectable inconsistency.
+      # All other device spoofing (NVMe, HDA, USB, AHCI, etc.) is kept.
+      sed -i 's/define PCI_DEVICE_ID_INTEL_P35_MCH.*$/define PCI_DEVICE_ID_INTEL_P35_MCH      0x29c0/' \
+        include/hw/pci/pci_ids.h
+      if ! grep -q 'PCI_DEVICE_ID_INTEL_P35_MCH.*0x29c0' include/hw/pci/pci_ids.h; then
+        echo "FATAL: MCH device ID revert to 0x29c0 failed in pci_ids.h"
+        grep -n 'PCI_DEVICE_ID_INTEL_P35_MCH' include/hw/pci/pci_ids.h || true
+        exit 1
+      fi
+      sed -i 's/k->vendor_id = .*/k->vendor_id = PCI_VENDOR_ID_INTEL;/' hw/pci-host/q35.c
+      if ! grep -q 'k->vendor_id = PCI_VENDOR_ID_INTEL;' hw/pci-host/q35.c; then
+        echo "FATAL: MCH vendor_id revert to Intel failed in q35.c"
+        grep -n 'vendor_id' hw/pci-host/q35.c || true
+        exit 1
+      fi
 
       echo "=== Hardware identity customization complete ==="
     '';

@@ -64,10 +64,11 @@ in
       fi
 
       # Revert AutoVirt's Q35 MCH device ID change (0x14d8 -> 0x29C0).
-      # With 0x14d8, OVMF enters the Q35-specific PEI init path which
-      # hits a fatal assertion (CpuDeadLoop in PlatformPei). With 0x29C0,
-      # OVMF does not recognize the AutoVirt-patched MCH and uses generic
-      # platform init instead. The QEMU-side MCH remains 0x14d8 (stealth).
+      # OVMF's Q35 PEI init (Q35TsegMbytesInitialization,
+      # Q35SmramAtDefaultSmbaseInitialization) requires the real Q35 MCH
+      # device ID — TSEG/SMRAM registers at DRAMC_REGISTER_Q35 offsets
+      # only work when OVMF recognizes the genuine Q35. qemu-stealth
+      # also reverts the MCH to 8086:29C0 so both sides match.
       echo "MCH before: $(grep 'INTEL_Q35_MCH_DEVICE_ID' OvmfPkg/Include/IndustryStandard/Q35MchIch9.h)"
       sed -i 's/define INTEL_Q35_MCH_DEVICE_ID.*$/define INTEL_Q35_MCH_DEVICE_ID    0x29C0/' \
         OvmfPkg/Include/IndustryStandard/Q35MchIch9.h
