@@ -34,15 +34,7 @@
             policy = "optional";
             name = "invtsc";
           }
-          {
-            policy = "require";
-            name = "kvm-pv-enforce-cpuid";
-          }
-        ]
-        ++ lib.optional aperfMperf {
-          policy = "require";
-          name = "aperfmperf";
-        };
+        ];
 
       features = {
         kvm = {
@@ -306,7 +298,12 @@
           "-smbios"
           "type=41,designation=${escapeSmbios dev.designation},kind=${escapeSmbios dev.kind},instance=${toString dev.instance}"
         ]) smbios.onboardDevices
-        ;
+        ++ [
+          "-cpu"
+          ("host,topoext=on,invtsc=on,kvm-pv-enforce-cpuid=on"
+            + lib.optionalString (hypervMode == "hidden") ",hypervisor=off"
+            + lib.optionalString aperfMperf ",aperfmperf=on")
+        ];
 
       # Devices the consuming module should remove when stripVirtio is true.
       # VirtIO device models are trivially identified by detection software;
