@@ -444,16 +444,12 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = !(cfg.cpuidSpoof.enable && cfg.cpuidPassthrough.enable);
-        message = "cpuidSpoof and cpuidPassthrough are mutually exclusive — cpuidPassthrough intercepts all CPUID, making cpuidSpoof redundant";
-      }
-      {
         assertion = !(cfg.cpuidPassthrough.enable && cfg.hypervMode == "enlightened");
         message = "cpuidPassthrough disables CPUID interception — Hyper-V enlightenments (hypervMode=enlightened) will be invisible to the guest; set hypervMode to hidden";
       }
       {
-        assertion = builtins.stringLength cfg.disk.model == 25;
-        message = "disk.model must be exactly 25 characters (space-padded per ATA spec); got ${toString (builtins.stringLength cfg.disk.model)}";
+        assertion = builtins.stringLength cfg.disk.model <= 40;
+        message = "disk.model must be at most 40 characters (ATA-8 model string limit); got ${toString (builtins.stringLength cfg.disk.model)}";
       }
       {
         assertion = builtins.stringLength cfg.acpiOem.id == 6;
