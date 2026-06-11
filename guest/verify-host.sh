@@ -237,12 +237,12 @@ else
 fi
 
 # -----------------------------------------------------------------------
-# 13. KVM ignore_msrs=0 (bare-metal #GP on unknown MSRs)
+# 13. KVM ignore_msrs (Windows needs =1: HWCR MSR 0xC0010015 write during HAL init)
 # -----------------------------------------------------------------------
 KVM_IGNORE_MSRS=$(cat /sys/module/kvm/parameters/ignore_msrs 2>/dev/null || echo "unknown")
 case "$KVM_IGNORE_MSRS" in
-    N|0) pass "KVM: ignore_msrs=0 (#GP on unknown MSRs)" ;;
-    Y|1) fail "KVM: ignore_msrs=1 (unknown MSRs silently succeed — detectable)" ;;
+    Y|1) pass "KVM: ignore_msrs=1 (Windows-compatible; HWCR write succeeds)" ;;
+    N|0) warn "KVM: ignore_msrs=0 (#GP on HWCR write will crash Windows during HAL init)" ;;
     *) warn "KVM: could not read ignore_msrs parameter" ;;
 esac
 

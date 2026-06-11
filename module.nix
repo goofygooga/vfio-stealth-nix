@@ -465,6 +465,8 @@ in
       "processor.max_cstate=${toString cfg.kernelParams.maxCState}"
       "kvm_amd.vls=0" # Force VMLOAD/VMSAVE interception (prevents SVM instruction indicator)
       "kvm_amd.vgif=0" # Force STGI/CLGI interception (prevents vGIF behavior indicator)
+      "kvm.ignore_msrs=1" # Windows writes AMD HWCR (0xC0010015) during HAL init; #GP on unhandled MSRs crashes the guest
+      "kvm.report_ignored_msrs=0" # Suppress ignored-MSR dmesg spam
     ]
     ++ lib.optionals cfg.kernelParams.tscReliable [ "tsc=reliable" ];
 
