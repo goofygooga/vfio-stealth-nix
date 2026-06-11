@@ -300,9 +300,11 @@
         ]) smbios.onboardDevices
         ++ [
           "-cpu"
-          ("host,topoext=on,invtsc=on,kvm-pv-enforce-cpuid=on"
+          (
+            "host,topoext=on,invtsc=on,kvm-pv-enforce-cpuid=on"
             + lib.optionalString (hypervMode == "hidden") ",hypervisor=off"
-            + lib.optionalString aperfMperf ",aperfmperf=on")
+            + lib.optionalString aperfMperf ",aperfmperf=on"
+          )
         ];
 
       # Devices the consuming module should remove when stripVirtio is true.
