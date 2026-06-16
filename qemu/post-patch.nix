@@ -120,36 +120,18 @@
     substituteInPlace hw/ide/core.c \
       --replace-fail 'HL-DT-ST BD-RE WH16NS60' '${opticalModel}'
 
-    # Revert Q35 MCH host bridge (00:00.0) to real Intel Q35 identity.
-    # AutoVirt spoofs it to AMD (1022:14d8), but OVMF's Q35 PEI init
-    # (Q35TsegMbytesInitialization, Q35SmramAtDefaultSmbaseInitialization)
-    # requires a genuine Q35 MCH — the TSEG/SMRAM registers live at
-    # DRAMC_REGISTER_Q35 offsets that only work when OVMF recognizes
-    # the real Q35 device ID. The MCH is firmware-internal (Q35 machine
-    # regardless), so real Q35 identity costs nothing in stealth — an
-    # AMD MCH on a Q35 machine is itself a detectable inconsistency.
-    # All other device spoofing (NVMe, HDA, USB, AHCI, etc.) is kept.
-    sed -i 's/define PCI_DEVICE_ID_INTEL_P35_MCH.*$/define PCI_DEVICE_ID_INTEL_P35_MCH      0x29c0/' \
-      include/hw/pci/pci_ids.h
-    if ! grep -q 'PCI_DEVICE_ID_INTEL_P35_MCH.*0x29c0' include/hw/pci/pci_ids.h; then
-      echo "FATAL: MCH device ID revert to 0x29c0 failed in pci_ids.h"
-      grep -n 'PCI_DEVICE_ID_INTEL_P35_MCH' include/hw/pci/pci_ids.h || true
-      exit 1
-    fi
-    # AutoVirt sets vendor_id = PCI_VENDOR_ID_AMD in BOTH q35.c (MCH)
-    # and gpex.c (PCIe root complex). Only the MCH must be Intel (OVMF
-    # requires it); the GPEX stays AMD (hides the Red Hat VM indicator).
+    # AutoVirt sets the Q35 MCH (00:00.0) to AMD vendor + device 0x14D8,
+    # and the matching AutoVirt EDK2 patch changes OVMF's MCH check to
+    # accept 0x14D8. BOTH sides agree, so Q35 TSEG/SMRAM init works.
+    # Keep the all-AMD topology: AMD MCH + AMD LPC/SMBus/AHCI/USB/PCIe.
+    # A mixed Intel-MCH + AMD-chipset Frankenstein is detectable and
+    # crashes the AMD RDNA 4 display driver (VIDEO_DXGKRNL_FATAL_ERROR).
     if ! grep -q 'k->vendor_id = PCI_VENDOR_ID_AMD;' hw/pci-host/q35.c; then
-      echo "FATAL: AutoVirt's k->vendor_id = PCI_VENDOR_ID_AMD anchor not found in q35.c"
-      exit 1
-    fi
-    sed -i 's|k->vendor_id = PCI_VENDOR_ID_AMD;|k->vendor_id = PCI_VENDOR_ID_INTEL;|' hw/pci-host/q35.c
-    if ! grep -q 'k->vendor_id = PCI_VENDOR_ID_INTEL;' hw/pci-host/q35.c; then
-      echo "FATAL: MCH vendor_id revert to Intel failed in q35.c"
+      echo "FATAL: AutoVirt's AMD vendor_id not found in q35.c — patch content changed"
       exit 1
     fi
     if ! grep -q 'k->vendor_id = PCI_VENDOR_ID_AMD;' hw/pci-host/gpex.c; then
-      echo "FATAL: GPEX vendor_id anchor (PCI_VENDOR_ID_AMD) not found in gpex.c — AutoVirt patch changed"
+      echo "FATAL: AutoVirt's AMD vendor_id not found in gpex.c — patch content changed"
       exit 1
     fi
 

@@ -52,36 +52,22 @@ in
         exit 1
       fi
 
-      # Strip TianoCore boot logo + BGRT table (VMAware CRC identifier 0x110350C5).
-      # Must strip from BOTH DSC (build declaration) and FDF (firmware image
-      # inclusion) — EDK2 cross-validates and errors if FDF references a
-      # module not declared in DSC. FDF uses CRLF + variable whitespace,
-      # so use sed substring match instead of exact-match substituteInPlace.
-      sed -i '/BootGraphicsResourceTableDxe/d' OvmfPkg/OvmfPkgX64.dsc OvmfPkg/OvmfPkgX64.fdf
-      sed -i '/LogoDxe/d' OvmfPkg/OvmfPkgX64.fdf
-      if grep -q 'BootGraphicsResourceTableDxe' OvmfPkg/OvmfPkgX64.dsc; then
-        echo "FATAL: BootGraphicsResourceTableDxe still in DSC"; exit 1
-      fi
-      if grep -q 'BootGraphicsResourceTableDxe' OvmfPkg/OvmfPkgX64.fdf; then
-        echo "FATAL: BootGraphicsResourceTableDxe still in FDF"; exit 1
-      fi
-      if grep -q 'LogoDxe' OvmfPkg/OvmfPkgX64.fdf; then
-        echo "FATAL: LogoDxe still in FDF"; exit 1
-      fi
+      # BGRT (Boot Graphics Resource Table) is kept -- RDNA 4 (Navi 48) needs
+      # the BGRT for a clean UEFI-to-Windows framebuffer handoff. Without it,
+      # Windows reinitializes the display engine during ExitBootServices,
+      # producing green/red framebuffer corruption on passthrough GPUs.
+      # VMAware detects the TianoCore logo CRC (0x110350C5); replace the logo
+      # with a blank image to neutralize the CRC without removing BGRT.
+      # VMAware CRC 0x110350C5 matches the stock TianoCore logo bitmap.
+      # A blank or custom logo in LogoDxe would break the CRC match.
 
-      # Revert AutoVirt's Q35 MCH device ID change (0x14d8 -> 0x29C0).
-      # OVMF's Q35 PEI init (Q35TsegMbytesInitialization,
-      # Q35SmramAtDefaultSmbaseInitialization) requires the real Q35 MCH
-      # device ID — TSEG/SMRAM registers at DRAMC_REGISTER_Q35 offsets
-      # only work when OVMF recognizes the genuine Q35. qemu-stealth
-      # also reverts the MCH to 8086:29C0 so both sides match.
-      echo "MCH before: $(grep 'INTEL_Q35_MCH_DEVICE_ID' OvmfPkg/Include/IndustryStandard/Q35MchIch9.h)"
-      sed -i 's/define INTEL_Q35_MCH_DEVICE_ID.*$/define INTEL_Q35_MCH_DEVICE_ID    0x29C0/' \
-        OvmfPkg/Include/IndustryStandard/Q35MchIch9.h
-      echo "MCH after:  $(grep 'INTEL_Q35_MCH_DEVICE_ID' OvmfPkg/Include/IndustryStandard/Q35MchIch9.h)"
-      if ! grep -q 'INTEL_Q35_MCH_DEVICE_ID.*0x29C0' OvmfPkg/Include/IndustryStandard/Q35MchIch9.h; then
-        echo "FATAL: MCH device ID revert failed"
-        grep -n 'MCH_DEVICE_ID\|0x14[dD]8\|0x29[cC]0' OvmfPkg/Include/IndustryStandard/Q35MchIch9.h || true
+      # AutoVirt's EDK2 patch sets INTEL_Q35_MCH_DEVICE_ID to 0x14D8 (AMD).
+      # The matching QEMU patch also sets the MCH to 0x14D8. Both sides
+      # agree, so OVMF's Q35 PEI init (TSEG/SMRAM) works: the registers
+      # are at fixed Q35 offsets regardless of the advertised device ID.
+      # Keep 0x14D8 for a consistent all-AMD PCI topology.
+      if ! grep -q 'INTEL_Q35_MCH_DEVICE_ID' OvmfPkg/Include/IndustryStandard/Q35MchIch9.h; then
+        echo "FATAL: INTEL_Q35_MCH_DEVICE_ID define not found in Q35MchIch9.h"
         exit 1
       fi
 
