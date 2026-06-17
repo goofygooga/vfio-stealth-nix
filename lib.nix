@@ -19,6 +19,7 @@
       hypervVendorId ? "AuthAMDRyzen", # 12 chars — libvirt max
       hypervMode ? "enlightened", # "enlightened" = visible hypervisor + Hyper-V enlightenments; "hidden" = concealed hypervisor, no enlightenments
       kvmPvEnforceCpuid ? false, # AutoVirt's QEMU patch flips the default to on; that flag faults Win HAL/HvLoader KVM paravirt MSRs with #GP. Off = pre-AutoVirt behavior.
+      pciMmio64Mb ? 65536, # 64 GB MMIO window for large-BAR GPUs (RDNA 4 = 16 GB BAR)
     }:
     {
       cpuFeatures =
@@ -260,6 +261,13 @@
         ++ [
           "-overcommit"
           "cpu-pm=on"
+        ]
+        # 64-bit MMIO window for large-BAR GPUs (RDNA 4 = 16 GB BAR).
+        # Without this, OVMF cannot map the framebuffer and the display
+        # corrupts when Windows takes over from the GOP driver.
+        ++ lib.optionals (pciMmio64Mb > 0) [
+          "-fw_cfg"
+          "opt/ovmf/X-PciMmio64Mb,string=${toString pciMmio64Mb}"
         ]
         # S3/S4 sleep states — DSDT _S3/_S4 packages visible to guest.
         # VMAware VM::POWER_CAPABILITIES detects missing sleep states.

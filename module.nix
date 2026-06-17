@@ -333,6 +333,17 @@ in
       };
     };
 
+    # --- OVMF 64-bit MMIO window ---
+    # GPUs with large BARs (>4 GB) need a wider 64-bit MMIO window in
+    # OVMF. Without it, OVMF cannot map the framebuffer BAR and the
+    # display corrupts when Windows takes over from the GOP driver.
+
+    pciMmio64Mb = lib.mkOption {
+      type = lib.types.int;
+      default = 65536;
+      description = "Size of the OVMF 64-bit PCI MMIO window in megabytes. 65536 (64 GB) covers GPUs up to 64 GB VRAM. Set to 0 to omit the flag (OVMF uses its default, which may be too small for modern GPUs).";
+    };
+
     # --- EDID monitor identity ---
     # QEMU's default EDID exposes generic/patched monitor strings.
     # Detection software can query the monitor EDID blob via SetupAPI/WMI and

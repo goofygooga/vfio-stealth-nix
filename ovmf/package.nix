@@ -52,14 +52,15 @@ in
         exit 1
       fi
 
-      # BGRT (Boot Graphics Resource Table) is kept -- RDNA 4 (Navi 48) needs
-      # the BGRT for a clean UEFI-to-Windows framebuffer handoff. Without it,
-      # Windows reinitializes the display engine during ExitBootServices,
-      # producing green/red framebuffer corruption on passthrough GPUs.
-      # VMAware detects the TianoCore logo CRC (0x110350C5); replace the logo
-      # with a blank image to neutralize the CRC without removing BGRT.
-      # VMAware CRC 0x110350C5 matches the stock TianoCore logo bitmap.
-      # A blank or custom logo in LogoDxe would break the CRC match.
+      # Strip TianoCore boot logo + BGRT table (VMAware CRC identifier 0x110350C5).
+      sed -i '/BootGraphicsResourceTableDxe/d' OvmfPkg/OvmfPkgX64.dsc OvmfPkg/OvmfPkgX64.fdf
+      sed -i '/LogoDxe/d' OvmfPkg/OvmfPkgX64.fdf
+      if grep -q 'BootGraphicsResourceTableDxe' OvmfPkg/OvmfPkgX64.dsc; then
+        echo "FATAL: BootGraphicsResourceTableDxe still in DSC"; exit 1
+      fi
+      if grep -q 'LogoDxe' OvmfPkg/OvmfPkgX64.fdf; then
+        echo "FATAL: LogoDxe still in FDF"; exit 1
+      fi
 
       # Revert AutoVirt's MCH device ID (0x14D8) to Intel Q35 (0x29C0).
       # The OVMF build enrolls Secure Boot keys by booting inside STOCK
