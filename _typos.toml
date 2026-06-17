@@ -8,3 +8,8 @@ HDA = "HDA"
 MCH = "MCH"
 # "ths" appears in "10ths" (tenths)
 ths = "ths"
+
+[default.extend-identifiers]
+# BARs = PCI Base Address Registers; typos splits it into "BA" + "Rs" and
+# false-flags "BA" as BY/BE.
+BARs = "BARs"
