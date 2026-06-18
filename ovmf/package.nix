@@ -78,21 +78,6 @@ in
         exit 1
       fi
 
-      # Redirect OVMF debug output from I/O port 0x402 to nowhere.
-      # Port 0x402 is a QEMU/OVMF-specific debug artifact; scanning
-      # for responsive I/O ports at 0x402 or 0xE9 reveals QEMU.
-      # OvmfPkgX64.dsc selects BaseDebugLibSerialPort which writes to
-      # 0x3F8 (COM1), not 0x402 — but the IoLib-based fallback in
-      # PlatformDebugLibIoPort targets 0x402. Replace with DebugLibNull
-      # for release builds to eliminate the port entirely.
-      if grep -q 'PlatformDebugLibIoPort' OvmfPkg/OvmfPkgX64.dsc; then
-        sed -i 's|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf|g' \
-          OvmfPkg/OvmfPkgX64.dsc
-        echo "[OK] OVMF: debug port 0x402 library replaced with DebugLibNull"
-      else
-        echo "[INFO] OVMF: PlatformDebugLibIoPort not referenced (may already be patched)"
-      fi
-
       echo "=== OVMF-stealth postPatch complete ==="
     '';
 

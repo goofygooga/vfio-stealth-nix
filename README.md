@@ -86,7 +86,6 @@ For long-form references beyond the quick start below, see:
 | OVMF boot logo / BGRT | TianoCore LogoDxe + BootGraphicsResourceTableDxe stripped (VMAware CRC indicator) | `ovmf/package.nix` |
 | ACPI thermal zone fluctuation | Timer()-based dynamic temperature in CPU + VRM thermal zones (handles static-value detection) | `acpi/sensor-probes.dsl` |
 | QEMU pvpanic device | Consumer excludes `<panic>` from domain XML; verified by `verify-host.sh` | `guest/verify-host.sh` |
-| OVMF debug output port | DebugLib redirected to null | `ovmf/package.nix` |
 | Registry SCSI DEVICEMAP | Cleaned via guest-side registry script | `guest/cleanup-registry.ps1` |
 
 ## Quick Start
