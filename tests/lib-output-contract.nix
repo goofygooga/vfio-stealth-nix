@@ -8,6 +8,7 @@
 
 let
   stealthLib = import ../lib.nix { inherit lib; };
+  cap = import ../lib/kernel-capabilities.nix { inherit lib; };
 
   testSmbios = {
     manufacturer = "Test Manufacturer Inc.";
@@ -60,7 +61,8 @@ let
     currentSpeed = 5700;
   };
 
-  # Test enlightened mode (the default, more features to check)
+  # Test enlightened mode with all features on and kernelCapabilities = null
+  # (back-compat path: lib assumes all features are supported).
   enlightened = stealthLib.mkStealthFeatures {
     smbios = testSmbios;
     acpiTables = acpi-ssdt-stealth;
@@ -76,6 +78,23 @@ let
     hypervMode = "enlightened";
     kvmPvEnforceCpuid = false;
     pciMmio64Mb = 65536;
+    # Explicit all-on to match the pre-per-feature-opt-in behavior.
+    hypervFeatures = {
+      vapic = true;
+      relaxed = true;
+      spinlocks = true;
+      frequencies = true;
+      vendor_id = true;
+      vpindex = true;
+      synic = true;
+      stimer = true;
+      reset = true;
+      ipi = true;
+      tlbflush = true;
+      reenlightenment = true;
+      runtime = true;
+    };
+    kernelCapabilities = null;
   };
 
   # Test hidden mode (no Hyper-V, hypervisor=off)
@@ -86,19 +105,68 @@ let
     hypervMode = "hidden";
   };
 
+  # Test new defaults (kernel-dep features off) with a kernel that advertises
+  # CONFIG_KVM_HYPERV. Only universal features should be enabled; hypervclock
+  # should be absent.
+  supported = stealthLib.mkStealthFeatures {
+    smbios = testSmbios;
+    acpiTables = acpi-ssdt-stealth;
+    smbiosTables = smbios-stealth-tables;
+    hypervMode = "enlightened";
+    # User explicitly opts in to the kernel-dep features they want.
+    hypervFeatures = {
+      vapic = true;
+      vpindex = true;
+      synic = true;
+    };
+    # Kernel advertises CONFIG_KVM_HYPERV=y.
+    kernelCapabilities = cap.fromConfigText ''
+      CONFIG_KVM_HYPERV=y
+      CONFIG_KVM_AMD=y
+    '';
+  };
+
+  # Test kernel that does NOT advertise CONFIG_KVM_HYPERV. Requested
+  # kernel-dep features must be dropped; warnings emitted.
+  unsupported = stealthLib.mkStealthFeatures {
+    smbios = testSmbios;
+    acpiTables = acpi-ssdt-stealth;
+    smbiosTables = smbios-stealth-tables;
+    hypervMode = "enlightened";
+    hypervFeatures = {
+      vapic = true;
+      vpindex = true;
+      synic = true;
+    };
+    # Kernel without KVM_HYPERV.
+    kernelCapabilities = cap.fromConfigText ''
+      CONFIG_KVM_AMD=y
+    '';
+  };
+
   enlightenedArgs = enlightened.qemuArgs testCpuIdentity;
   hiddenArgs = hidden.qemuArgs testCpuIdentity;
+  supportedArgs = supported.qemuArgs testCpuIdentity;
+  unsupportedArgs = unsupported.qemuArgs testCpuIdentity;
 
   argsJson = builtins.toJSON enlightenedArgs;
   hiddenArgsJson = builtins.toJSON hiddenArgs;
+  supportedArgsJson = builtins.toJSON supportedArgs;
+  unsupportedArgsJson = builtins.toJSON unsupportedArgs;
   featuresJson = builtins.toJSON enlightened.features;
   hiddenFeaturesJson = builtins.toJSON hidden.features;
+  supportedFeaturesJson = builtins.toJSON supported.features;
+  unsupportedFeaturesJson = builtins.toJSON unsupported.features;
   clockJson = builtins.toJSON enlightened.clock;
   hiddenClockJson = builtins.toJSON hidden.clock;
+  supportedClockJson = builtins.toJSON supported.clock;
+  unsupportedClockJson = builtins.toJSON unsupported.clock;
   sysinfoJson = builtins.toJSON enlightened.sysinfo;
   cpuFeaturesJson = builtins.toJSON enlightened.cpuFeatures;
   hiddenCpuFeaturesJson = builtins.toJSON hidden.cpuFeatures;
   devicesJson = builtins.toJSON enlightened.devicesToRemove;
+  supportedWarningsJson = builtins.toJSON supported.warnings;
+  unsupportedWarningsJson = builtins.toJSON unsupported.warnings;
 
   # Each guard: (name, json-source, jq-filter that must return true)
   guards = [
@@ -386,6 +454,41 @@ let
       name = "strip-tablet";
       json = devicesJson;
       filter = ''any(. == "virtio-tablet")'';
+    }
+
+    # --- kernelCapabilities: intersection logic ---
+    # Request vpindex + synic on a kernel that advertises KVM_HYPERV: both
+    # must appear in the hyperv block.
+    {
+      name = "kernel-supported-features-pass-through";
+      json = supportedFeaturesJson;
+      filter = ".hyperv.vpindex.state == true and .hyperv.synic.state == true";
+    }
+    # Same request on a kernel without KVM_HYPERV: both must be dropped.
+    {
+      name = "kernel-unsupported-features-dropped";
+      json = unsupportedFeaturesJson;
+      filter = "(.hyperv.vpindex.state == null or .hyperv.vpindex.state == false) and (.hyperv.synic.state == null or .hyperv.synic.state == false)";
+    }
+    # Universal features (vapic) must survive even when the kernel does not
+    # advertise KVM_HYPERV.
+    {
+      name = "universal-features-survive-no-kvm-hyperv";
+      json = unsupportedFeaturesJson;
+      filter = ".hyperv.vapic.state == true";
+    }
+    # Warnings: the unsupported case must emit a warning naming vpindex.
+    {
+      name = "warning-emitted-on-drop";
+      json = unsupportedWarningsJson;
+      filter = ''any(. | contains("hypervFeatures.vpindex"))'';
+    }
+    # Back-compat: kernelCapabilities = null + requested feature must pass
+    # through (assumes supported).
+    {
+      name = "back-compat-null-kernel-caps-passes-through";
+      json = featuresJson;
+      filter = ".hyperv.vpindex.state == true";
     }
   ];
 

@@ -298,7 +298,91 @@ in
         "hidden"
       ];
       default = "enlightened";
-      description = "Hyper-V enlightenment strategy for hardened VMs. \"enlightened\" exposes the hypervisor + full Hyper-V enlightenments (paravirt perf; blends in with VBS-enabled Windows 11). \"hidden\" conceals the hypervisor and emits no enlightenments. Per-VM overridable via vms.<name>.hypervMode";
+      description = "Hyper-V enlightenment strategy for hardened VMs. \"enlightened\" exposes the hypervisor + Hyper-V enlightenments (paravirt perf; blends in with VBS-enabled Windows 11). \"hidden\" conceals the hypervisor and emits no enlightenments. Per-VM overridable via vms.<name>.hypervMode";
+    };
+
+    # Per-feature opt-in for Hyper-V enlightenments. Universal features
+    # (no kernel dep) default on; kernel-dependent features (require
+    # CONFIG_KVM_HYPERV=y in the host kernel) default off so the VM starts
+    # cleanly on hosts that don't advertise them. Enable kernel-dependent
+    # features only after computing kernelCapabilities from your kernel's
+    # .config (see lib/kernel-capabilities.nix).
+    hypervFeatures = {
+      vapic = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "SynIC APIC virtualization (HvApic). QEMU-emulated, no host kernel dependency.";
+      };
+      relaxed = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Relaxed timing (HvRelax). QEMU-emulated, no host kernel dependency.";
+      };
+      spinlocks = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Spinlock retry reporting (HvSpin). QEMU-emulated, no host kernel dependency.";
+      };
+      frequencies = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "TSC frequency reporting (HvTscPage). QEMU-emulated, no host kernel dependency.";
+      };
+      vendor_id = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Hyper-V vendor_id exposure. Libvirt-level, no host kernel dependency.";
+      };
+      vpindex = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Virtual processor index (HvVpIndex). Requires CONFIG_KVM_HYPERV=y in the host kernel. Enables libvirtError: 'host doesn't support hyperv vpindex' if requested on a kernel that does not advertise it.";
+      };
+      synic = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Synthetic interrupt controller (HvSynIC). Requires CONFIG_KVM_HYPERV=y.";
+      };
+      stimer = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Synthetic timers (HvSyntheticTimers) with direct mode. Requires CONFIG_KVM_HYPERV=y.";
+      };
+      reset = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Hyper-V reset hypercall. Requires CONFIG_KVM_HYPERV=y.";
+      };
+      ipi = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Hyper-V IPI hypercall. Requires CONFIG_KVM_HYPERV=y.";
+      };
+      tlbflush = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Hyper-V TLB flush hypercall. Requires CONFIG_KVM_HYPERV=y.";
+      };
+      reenlightenment = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "TSC re-enlightenment notification (HvReenlightenment). Requires CONFIG_KVM_HYPERV=y.";
+      };
+      runtime = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Hyper-V runtime (HvRuntime). Requires CONFIG_KVM_HYPERV=y.";
+      };
+    };
+
+    # Host kernel capability set. null = assume all features supported
+    # (back-compat). Compute via lib.kernelCapabilities.fromConfigPath
+    # pointing at the host kernel's .config, or set the attrset by hand
+    # after verifying which CONFIG options your kernel has enabled.
+    kernelCapabilities = lib.mkOption {
+      type = lib.types.nullOr (lib.types.attrsOf lib.types.bool);
+      default = null;
+      description = "Per-feature capability set from the host kernel. null = assume all features supported (back-compat). Compute via lib.kernelCapabilities.fromConfigPath in your host config, or set the attrset by hand after running zcat /proc/config.gz | grep KVM_HYPERV on the host.";
     };
 
     # --- VirtIO device stripping ---
@@ -507,7 +591,23 @@ in
           "vfio.stealth: smbios.memory.manufacturer is 'Unknown' -- set to your real DIMM vendor from dmidecode -t 17"
       ++
         lib.optional (cfg.smbios.onboardDevices == [ ])
-          "vfio.stealth: smbios.onboardDevices is empty (no SMBIOS Type 41) -- set to match your board from dmidecode -t 41";
+          "vfio.stealth: smbios.onboardDevices is empty (no SMBIOS Type 41) -- set to match your board from dmidecode -t 41"
+      ++
+        lib.optional
+          (
+            cfg.kernelCapabilities == null
+            && (
+              cfg.hypervFeatures.vpindex
+              || cfg.hypervFeatures.synic
+              || cfg.hypervFeatures.stimer
+              || cfg.hypervFeatures.reset
+              || cfg.hypervFeatures.ipi
+              || cfg.hypervFeatures.tlbflush
+              || cfg.hypervFeatures.reenlightenment
+              || cfg.hypervFeatures.runtime
+            )
+          )
+          "vfio.stealth: kernel-dependent hypervFeatures.* are enabled but kernelCapabilities is null. The lib will assume the host kernel supports them -- if it does not, libvirt will fail with 'host doesn't support hyperv X' at VM start. Set myModules.vfio.stealth.kernelCapabilities = vfio-stealth-nix.lib.kernelCapabilities.fromConfigPath \"\${config.boot.kernelPackages.kernel}/.config\"; (or set the attrset by hand) to declare your kernel's real capabilities.";
 
     assertions = [
       {

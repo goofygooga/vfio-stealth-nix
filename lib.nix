@@ -1,4 +1,7 @@
 { lib }:
+let
+  cap = import ./lib/kernel-capabilities.nix { inherit lib; };
+in
 {
   mkStealthFeatures =
     {
@@ -20,8 +23,106 @@
       hypervMode ? "enlightened", # "enlightened" = visible hypervisor + Hyper-V enlightenments; "hidden" = concealed hypervisor, no enlightenments
       kvmPvEnforceCpuid ? false, # AutoVirt's QEMU patch flips the default to on; that flag faults Win HAL/HvLoader KVM paravirt MSRs with #GP. Off = pre-AutoVirt behavior.
       pciMmio64Mb ? 65536, # 64 GB MMIO window for large-BAR GPUs (RDNA 4 = 16 GB BAR)
+      # Per-feature opt-in. Universal features (no kernel dep) default on.
+      # Kernel-dependent features (require CONFIG_KVM_HYPERV=y) default off
+      # so the VM starts cleanly on hosts that don't advertise them.
+      hypervFeatures ? {
+        vapic = true;
+        relaxed = true;
+        spinlocks = true;
+        frequencies = true;
+        vendor_id = true;
+        vpindex = false;
+        synic = false;
+        stimer = false;
+        reset = false;
+        ipi = false;
+        tlbflush = false;
+        reenlightenment = false;
+        runtime = false;
+      },
+      # Capability set from the host kernel. null = assume all features
+      # supported (back-compat with users on capable kernels). Compute via
+      # cap.fromConfigPath in the host config; see lib/kernel-capabilities.nix.
+      kernelCapabilities ? null,
     }:
+    let
+      featureSupported = f: if kernelCapabilities == null then true else kernelCapabilities.${f} or false;
+      enabledFeatures = builtins.filter (
+        f: (hypervFeatures.${f} or false) && featureSupported f
+      ) cap.allFeatures;
+      droppedFeatures = builtins.filter (
+        f: (hypervFeatures.${f} or false) && !(featureSupported f)
+      ) cap.allFeatures;
+      # Per-feature attribute contribution to the hyperv block. Vendor_id needs
+      # the parameter, so it's built from the captured hypervVendorId.
+      featureAttrs = {
+        vapic = {
+          vapic.state = true;
+        };
+        relaxed = {
+          relaxed.state = true;
+        };
+        spinlocks = {
+          spinlocks = {
+            state = true;
+            retries = 8191;
+          };
+        };
+        frequencies = {
+          frequencies.state = true;
+        };
+        vendor_id = {
+          vendor_id = {
+            state = true;
+            value = hypervVendorId;
+          };
+        };
+        vpindex = {
+          vpindex.state = true;
+        };
+        synic = {
+          synic.state = true;
+        };
+        stimer = {
+          stimer = {
+            state = true;
+            direct.state = true;
+          };
+        };
+        reset = {
+          reset.state = true;
+        };
+        ipi = {
+          ipi.state = true;
+        };
+        tlbflush = {
+          tlbflush.state = true;
+        };
+        reenlightenment = {
+          reenlightenment.state = true;
+        };
+        runtime = {
+          runtime.state = true;
+        };
+      };
+      hypervBlock = lib.foldl' (acc: f: acc // featureAttrs.${f}) { mode = "custom"; } enabledFeatures;
+      # hypervclock needs CONFIG_KVM_HYPERV just like the SynIC features; it
+      # is present iff at least one kernel-dependent feature is enabled.
+      anyKernelDepEnabled = lib.any (f: builtins.elem f enabledFeatures) (
+        builtins.attrNames cap.featureRequires
+      );
+      droppedWarnings = map (
+        f:
+        let
+          req = cap.featureRequires.${f} or [ ];
+        in
+        "vfio.stealth: hypervFeatures.${f} = true but the host kernel does not advertise it (missing CONFIG: ${lib.concatStringsSep ", " req}). The feature has been dropped so libvirt can start the VM. To silence this, set hypervFeatures.${f} = false or verify the kernel was built with the required CONFIG options."
+      ) droppedFeatures;
+    in
     {
+      warnings = droppedWarnings;
+
       cpuFeatures =
         lib.optional (hypervMode == "hidden") {
           policy = "disable";
@@ -46,32 +147,8 @@
         };
         vmport.state = false;
       }
-      // lib.optionalAttrs (hypervMode == "enlightened") {
-        hyperv = {
-          mode = "custom";
-          relaxed.state = true;
-          vapic.state = true;
-          spinlocks = {
-            state = true;
-            retries = 8191;
-          };
-          vpindex.state = true;
-          runtime.state = true;
-          synic.state = true;
-          stimer = {
-            state = true;
-            direct.state = true;
-          };
-          reset.state = true;
-          vendor_id = {
-            state = true;
-            value = hypervVendorId;
-          };
-          frequencies.state = true;
-          reenlightenment.state = true;
-          tlbflush.state = true;
-          ipi.state = true;
-        };
+      // lib.optionalAttrs (hypervMode == "enlightened" && enabledFeatures != [ ]) {
+        hyperv = hypervBlock;
       };
 
       clock = {
@@ -95,7 +172,7 @@
           }
           {
             name = "hypervclock";
-            present = hypervMode == "enlightened";
+            present = anyKernelDepEnabled;
           }
           {
             name = "tsc";

@@ -365,6 +365,20 @@ These represent current boundaries of software-level VM stealth:
 | **NPT page-walk latency** | Nested Page Table translation adds ~10-20ns per TLB miss. Detectable in theory via microbenchmarks, but high noise floor makes it impractical for false-positive rates. No known detection software uses this. |
 | **Performance variance** | ML-based detection of frame-time jitter from VM exits. BetterTiming + `cpuidPassthrough` substantially reduce but cannot eliminate this surface. |
 
+### Hyper-V enlightenment capability mismatch
+
+Kernel-dependent Hyper-V enlightenments (`vpindex`, `synic`, `stimer`,
+`reset`, `ipi`, `tlbflush`, `reenlightenment`, `runtime`) require
+`CONFIG_KVM_HYPERV=y` in the host kernel. On hosts that do not
+advertise the capability, libvirt refuses to start the VM with
+`host doesn't support hyperv '<feature>'`. The lib exposes each
+enlightenment as a per-feature opt-in (`myModules.vfio.stealth.hypervFeatures.*`),
+intersects the request with the host kernel's capability set
+(`myModules.vfio.stealth.kernelCapabilities`), drops unsupported
+features with a NixOS warning, and lets the VM start cleanly. See
+[`docs/OPTIONS.md`](docs/OPTIONS.md#hyper-v-features) for the full
+opt-in table and the auto-detection helper.
+
 ## License
 
 GPL-2.0 (kernel patches mandate GPL)

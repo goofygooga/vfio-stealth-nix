@@ -33,3 +33,20 @@ __pycache__/
 .ruff_cache/
 .rumdl_cache/
 .mypy_cache/
+
+# ── repo-specific ────────────────────────────────────────────────
+# Scratch / one-shot exports from agent sessions (never tracked).
+*work*export*.txt
+*session*export*.txt
+
+# Editor backups + OS metadata
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# IDE state
+.vscode/
+.idea/
+

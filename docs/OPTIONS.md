@@ -19,7 +19,73 @@ Canonical reference for all `myModules.vfio.stealth.*` options and
 | `macPrefix`         | `str`                           | `"D8:BB:C1"`     | OUI prefix for overridden MAC (Realtek OUI matching ASUS X870E onboard LAN)                                                                                                                                                                                                                                      | MAC address OUI                        |
 | `aperfMperf`        | `bool`                          | `true`           | Pass through IA32_APERF/MPERF MSRs to guest. Requires kernel 6.18+                                                                                                                                                                                                                                               | IET-based VM detection via MSR absence |
 | `hypervVendorId`    | `str` (1-12 chars)              | `"AuthAMDRyzen"` | Hyper-V vendor_id reported to guest. Avoid known VM values (AMDisbetter!, Microsoft Hv)                                                                                                                                                                                                                          | Hyper-V vendor_id identification       |
-| `hypervMode`        | `enum ["enlightened" "hidden"]` | `"enlightened"`  | "enlightened" exposes hypervisor + full Hyper-V enlightenments. "hidden" conceals the hypervisor and emits no enlightenments                                                                                                                                                                                     | Hyper-V presence detection             |
+| `hypervMode`        | `enum ["enlightened" "hidden"]` | `"enlightened"`  | "enlightened" exposes hypervisor + Hyper-V enlightenments. "hidden" conceals the hypervisor and emits no enlightenments                                                                                                                                                                                     | Hyper-V presence detection             |
+| `kernelCapabilities` | `nullOr (attrsOf bool)` | `null`       | Per-feature capability set from the host kernel. `null` = assume all features supported (back-compat). Compute via `vfio-stealth-nix.lib.kernelCapabilities.fromConfigPath` in your host config, or set the attrset by hand after `zcat /proc/config.gz \| grep KVM_HYPERV`. See [Kernel capabilities](#kernel-capabilities) | Hyper-V capability mismatches          |
+
+## Hyper-V features
+
+Each Hyper-V enlightenment is its own boolean option. Universal features
+(no host kernel dependency) default to `true`. Kernel-dependent features
+(require `CONFIG_KVM_HYPERV=y` in the host kernel) default to `false` so
+the VM starts cleanly on hosts that do not advertise them.
+
+| Option                        | Type   | Default | Kernel dep         | Description                                                                            |
+| ----------------------------- | ------ | ------- | ------------------ | -------------------------------------------------------------------------------------- |
+| `hypervFeatures.vapic`        | `bool` | `true`  | --                 | SynIC APIC virtualization (HvApic). QEMU-emulated.                                     |
+| `hypervFeatures.relaxed`      | `bool` | `true`  | --                 | Relaxed timing (HvRelax). QEMU-emulated.                                               |
+| `hypervFeatures.spinlocks`    | `bool` | `true`  | --                 | Spinlock retry reporting (HvSpin). QEMU-emulated.                                      |
+| `hypervFeatures.frequencies`  | `bool` | `true`  | --                 | TSC frequency reporting (HvTscPage). QEMU-emulated.                                    |
+| `hypervFeatures.vendor_id`    | `bool` | `true`  | --                 | Hyper-V vendor_id exposure. Libvirt-level.                                             |
+| `hypervFeatures.vpindex`      | `bool` | `false` | `CONFIG_KVM_HYPERV` | Virtual processor index (HvVpIndex). libvirt errors with "host doesn't support hyperv 'vpindex'" on kernels that do not advertise it. |
+| `hypervFeatures.synic`        | `bool` | `false` | `CONFIG_KVM_HYPERV` | Synthetic interrupt controller (HvSynIC).                                              |
+| `hypervFeatures.stimer`       | `bool` | `false` | `CONFIG_KVM_HYPERV` | Synthetic timers with direct mode.                                                     |
+| `hypervFeatures.reset`        | `bool` | `false` | `CONFIG_KVM_HYPERV` | Hyper-V reset hypercall.                                                               |
+| `hypervFeatures.ipi`          | `bool` | `false` | `CONFIG_KVM_HYPERV` | Hyper-V IPI hypercall.                                                                 |
+| `hypervFeatures.tlbflush`     | `bool` | `false` | `CONFIG_KVM_HYPERV` | Hyper-V TLB flush hypercall.                                                           |
+| `hypervFeatures.reenlightenment` | `bool` | `false` | `CONFIG_KVM_HYPERV` | TSC re-enlightenment notification (HvReenlightenment).                                  |
+| `hypervFeatures.runtime`      | `bool` | `false` | `CONFIG_KVM_HYPERV` | Hyper-V runtime (HvRuntime).                                                           |
+
+## Kernel capabilities
+
+`hypervFeatures.*` controls what the lib *requests*; `kernelCapabilities`
+controls what the host kernel can actually *provide*. The lib intersects
+the two: a feature is emitted only if both the user requests it AND the
+host kernel supports it. Features that are requested but unsupported are
+dropped from the output, a NixOS warning is emitted naming the missing
+`CONFIG_*` option, and the VM starts without the dropped feature (no
+libvirt error).
+
+Compute the capability set from the running kernel's `.config` in the
+host config:
+
+```nix
+{ config, pkgs, vfio-stealth-nix, ... }:
+{
+  myModules.vfio.stealth.kernelCapabilities =
+    vfio-stealth-nix.lib.kernelCapabilities.fromConfigPath
+      "${config.boot.kernelPackages.kernel}/.config";
+}
+```
+
+If the kernel derivation does not expose `.config` in its output, point
+at a path the consumer knows exists (e.g. a gunzipped copy of
+`/proc/config.gz` placed in the Nix store), or set the attrset by hand:
+
+```nix
+myModules.vfio.stealth.kernelCapabilities = {
+  vpindex = true;
+  synic = true;
+  stimer = true;
+  reset = true;
+  ipi = true;
+  tlbflush = true;
+  reenlightenment = true;
+  runtime = true;
+};
+```
+
+The `lib/kernel-capabilities.nix` helper also exports `fromConfigText`
+(for tests) and `emptyCapabilities` (returns all features = false).
 | `kvmPvEnforceCpuid` | `bool`                          | `false`          | Pass `kvm-pv-enforce-cpuid=on` to the guest `-cpu` flag. AutoVirt's QEMU patch flipped the QEMU default to on; that flag faults RDMSR/WRMSR in the KVM paravirt range (0x4b564d00-0x4b564d08) with #GP unless the matching CPUID feature is set, which crashes Windows HAL/HvLoader. Off = pre-AutoVirt behavior | KVM paravirt MSR #GP on Win init       |
 | `pciMmio64Mb`       | `int`                           | `65536`          | Size of the OVMF 64-bit PCI MMIO window in MB. 65536 (64 GB) covers GPUs up to 64 GB VRAM. 0 = omit the flag (OVMF uses its default, which may be too small for modern GPUs)                                                                                                                                    | --                                     |
 
