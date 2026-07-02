@@ -24,7 +24,7 @@
     # derivation, so this block is a no-op.  Kept for standalone builds.
     if [ -d roms/edk2 ]; then
       EDK2_PATCH=""
-      for p in "${autovirt}"/patches/EDK2/AMD-edk2-stable*.patch; do
+      for p in "${autovirt}"/patches/EDK2/Intel-edk2-stable*.patch; do
         if [ -f "$p" ]; then EDK2_PATCH="$p"; break; fi
       done
       if [ -z "$EDK2_PATCH" ]; then
