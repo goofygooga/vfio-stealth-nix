@@ -12,7 +12,7 @@
   edidWeek ? 22,
   edidYear ? 2020,
   # ACPI OEM: Generic AMI (6-char and 8-char padded)
-  acpiOemId ? "ALASKA",
+  acpiOemId ? "ARCSYS",
   acpiOemTableId ? "A M I   ",
   # Disk: Generic WD
   diskModel ? "WDC WD10EZEX-00WN4A0     ",
