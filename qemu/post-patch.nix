@@ -94,7 +94,7 @@
       --replace-fail '"QEMU"' '"${scsiVendor}"'
 
     # ACPI OEM: replace values in aml-build.h
-    sed -i 's|"ALASKA"|"${acpiOemId}"|g' include/hw/acpi/aml-build.h
+    sed -i 's|"ARCSYS"|"${acpiOemId}"|g' include/hw/acpi/aml-build.h
     if ! grep -q '"${acpiOemId}"' include/hw/acpi/aml-build.h; then
       echo "FATAL: ACPI OEM ID replacement to ${acpiOemId} did not apply"
       exit 1
