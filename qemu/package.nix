@@ -62,7 +62,7 @@ assert lib.assertMsg (lib.hasPrefix expectedVersionPrefix qemuBase.version)
   (old: {
     pname = "qemu-stealth";
     patches = (old.patches or [ ]) ++ [
-      "${autovirt}/patches/QEMU/AMD-v11.0.0.patch"
+      "${autovirt}/patches/QEMU/Intel-v11.0.0.patch"
     ];
     postPatch =
       (old.postPatch or "")
