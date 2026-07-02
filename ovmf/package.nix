@@ -15,13 +15,13 @@ let
   # - Overrides ACPI OEM fields
   autovirtPatch =
     let
-      candidates = builtins.filter (n: lib.hasPrefix "AMD-edk2-stable" n && lib.hasSuffix ".patch" n) (
+      candidates = builtins.filter (n: lib.hasPrefix "Intel-edk2-stable" n && lib.hasSuffix ".patch" n) (
         builtins.attrNames (builtins.readDir "${autovirt}/patches/EDK2")
       );
     in
     assert lib.assertMsg (
       candidates != [ ]
-    ) "ovmf-stealth: no AMD-edk2-stable*.patch found in autovirt/patches/EDK2";
+    ) "ovmf-stealth: no Intel-edk2-stable*.patch found in autovirt/patches/EDK2";
     "${autovirt}/patches/EDK2/${builtins.head (lib.sort (a: b: a > b) candidates)}";
 in
 # Apply patches directly to OVMF via overrideAttrs — nixpkgs OVMF uses
